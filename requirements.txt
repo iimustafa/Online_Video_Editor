@@ -1,5 +1,7 @@
-# Use known stable versions
-streamlit==1.27.0
-Pillow==9.5.0
-moviepy==1.0.3 
-# Make sure any other dependency causing issues is also pinned
+# Use a modern version of MoviePy to resolve the Pillow compatibility issue
+moviepy>=2.0.0 
+
+# Unpin Streamlit and Pillow to allow the installer to choose the latest, 
+# Python 3.13 compatible versions (which you saw worked in the logs)
+streamlit
+Pillow
