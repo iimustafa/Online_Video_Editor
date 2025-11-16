@@ -49,7 +49,7 @@ def get_css(is_dark):
     .stApp {{
         background-color: {bg_color};
         color: {text_color};
-        font-family: 'Space Mono', monospace; /* Creative Font */
+        font-family: 'Space Mono', monospace;
     }}
 
     /* Streamlit Primary Color Override (for default widgets) */
@@ -78,13 +78,14 @@ def get_css(is_dark):
         font-style: italic;
     }}
     
-    /* Input Card Container (Creative Feature) */
+    /* Input Card Container (Applied to st.container within tabs) */
     .stContainer {{
         background-color: {card_bg};
         padding: 30px;
         border-radius: 20px;
         box-shadow: 0 0 15px {shadow_color};
-        margin-top: 40px;
+        margin-top: 20px;
+        margin-bottom: 20px;
     }}
     
     /* Custom divider color */
@@ -95,7 +96,7 @@ def get_css(is_dark):
     /* Accent Button Style */
     .stButton>button {{
         background-color: {accent_color};
-        color: {bg_color}; /* Use contrasting background color for text */
+        color: {bg_color};
         border-radius: 12px;
         border: none;
         padding: 12px 35px;
@@ -109,6 +110,13 @@ def get_css(is_dark):
         box-shadow: 0 6px 15px {shadow_color};
     }}
     
+    /* Style for the active tab for better visibility */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {{
+        color: {accent_color};
+        border-bottom-color: {accent_color};
+        font-weight: bold;
+    }}
+
     /* Center input elements */
     .stFileUploader, .stTextInput {{
         margin-bottom: 25px;
@@ -119,6 +127,107 @@ def get_css(is_dark):
 
 # Apply the dynamic CSS
 st.markdown(get_css(st.session_state.dark_mode), unsafe_allow_html=True)
+
+# --- Utility Functions ---
+
+def watermarker_section():
+    """Implements the PDF Watermarker (Protocol 47)."""
+    
+    # Use st.container to get the styled card look
+    with st.container():
+        st.markdown("## 💾 DATA INGESTION: UPLOAD FILE")
+        
+        uploaded_file = st.file_uploader("PDF Uploader (Watermark)", type=['pdf'], label_visibility="collapsed", key="wm_uploader")
+        
+        st.markdown("## ✍️ WATERMARK TEXT: SET TAG")
+        
+        watermark_text = st.text_input("Watermark Text Input", "CYBER-FLUX ACCESS DENIED", label_visibility="collapsed", key="wm_text")
+        
+        if uploaded_file is None:
+            st.info("Upload your document and define the security tag.")
+            return
+
+        st.markdown("---")
+        
+        with st.spinner('INITIATING SECURITY PROTOCOL...'):
+            try:
+                # 1. Create the watermark PDF
+                packet = io.BytesIO()
+                c = canvas.Canvas(packet, pagesize=letter)
+                c.setFont("Helvetica-Bold", 48)
+                wm_color = (1, 1, 1, 0.10) if st.session_state.dark_mode else (0, 0, 0, 0.10)
+                c.setFillColorRGB(*wm_color[:3], alpha=wm_color[3]) 
+                
+                width, height = letter
+                c.translate(width / 2, height / 2)
+                c.rotate(30)
+                c.drawCentredString(0, 0, watermark_text)
+                c.save()
+                packet.seek(0)
+                watermark_reader = PdfReader(packet)
+                watermark_page = watermark_reader.pages[0]
+
+                # 2. Process input PDF
+                input_pdf = PdfReader(uploaded_file)
+                pdf_writer = PdfWriter()
+
+                # 3. Apply watermark
+                for page in input_pdf.pages:
+                    page.merge_page(watermark_page)
+                    pdf_writer.add_page(page)
+
+                # 4. Save output
+                output_pdf_buffer = io.BytesIO()
+                pdf_writer.write(output_pdf_buffer)
+                output_pdf_buffer.seek(0)
+
+                st.success("PROTOCOL SUCCESSFUL: DOCUMENT SECURED.")
+                
+                d_col1, d_col2, d_col3 = st.columns([1, 1, 1])
+                with d_col2:
+                    st.download_button(
+                        label="DOWNLOAD SECURED DATA",
+                        data=output_pdf_buffer,
+                        file_name="SECURED_" + uploaded_file.name,
+                        mime="application/pdf"
+                    )
+
+            except Exception as e:
+                st.error(f"PROTOCOL FAILURE: {e}")
+                st.info("Ensure the data file is a valid, unencrypted PDF format.")
+
+
+def page_counter_section():
+    """Implements the simple PDF Page Counter (Diagnostic Module)."""
+    
+    with st.container():
+        st.markdown("## 📥 FILE ACCESS: UPLOAD PDF")
+        
+        uploaded_file = st.file_uploader("PDF Uploader (Counter)", type=['pdf'], label_visibility="collapsed", key="pc_uploader")
+        
+        if uploaded_file is None:
+            st.info("Upload a PDF to run the diagnostic module.")
+            return
+
+        st.markdown("---")
+
+        with st.spinner('RUNNING DIAGNOSTIC...'):
+            try:
+                # Read PDF
+                reader = PdfReader(uploaded_file)
+                page_count = len(reader.pages)
+
+                st.success("DIAGNOSTIC COMPLETE.")
+                st.markdown(f"""
+                <div style="padding: 15px; border: 2px solid {st.get_option('theme.primaryColor')}; border-radius: 10px; text-align: center;">
+                    <h3 style="color: {st.get_option('theme.primaryColor')}; margin: 0;">TOTAL PAGES DETECTED</h3>
+                    <p style="font-size: 50px; font-weight: bold; margin: 5px 0 0 0;">{page_count}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+            except Exception as e:
+                st.error(f"DIAGNOSTIC ERROR: {e}")
+                st.info("The file could not be read. Please check the PDF integrity.")
 
 
 # --- Mode Toggle and Header ---
@@ -137,14 +246,14 @@ if st.session_state.mode_toggle != st.session_state.dark_mode:
 # Main title section
 h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
 with h_col2:
-    st.markdown('<div class="hero-font">SECURE.PDF // PROTOCOL 47</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-font">SECURE.PDF // CYBER-FLUX</div>', unsafe_allow_html=True)
     st.markdown('<p class="tagline">A Data Integrity Module built by Cyber-Flux.</p>', unsafe_allow_html=True)
 
 st.divider()
 
-# --- NEW: Tuwaiq Academy Mission Section ---
+# --- Tuwaiq Academy Mission Section (Branding) ---
 def tuwaiq_mission_section():
-    st.markdown('<h2 style="text-align: center; color: #ff33ff;">// Tuwaiq Academy //</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="text-align: center; color: #ff33ff;">// ACADEMY PROTOCOL: TUWAIQ MISSION //</h2>', unsafe_allow_html=True)
     
     m_col1, m_col2, m_col3 = st.columns([1, 3, 1])
     with m_col2:
@@ -152,15 +261,13 @@ def tuwaiq_mission_section():
             f"""
             <div style="background-color: {st.get_option('theme.backgroundColor')}; padding: 25px; border-radius: 10px; border: 2px solid {st.get_option('theme.primaryColor')};">
             <p style="font-size: 18px; color: {st.get_option('theme.textColor')};">
-            This module represents the core mission of **Tuwaiq Academy**: establishing Saudi Arabia as a global hub for advanced technology and digital innovation, aligned with **Vision 2030**.
+            This utility is part of the core mission of **Tuwaiq Academy**: establishing Saudi Arabia as a global hub for advanced technology, aligned with **Vision 2030**.
             </p>
             
             <h3 style="color: {st.get_option('theme.primaryColor')}; margin-top: 20px;">Primary Focus Areas:</h3>
             <ul>
                 <li><strong>Cyber Security:</strong> Hardening the digital landscape with advanced training and real-world challenges.</li>
-                <li><strong>Programming & Software Engineering:</strong> Building the next generation of developers in high-demand stacks (Python, JavaScript).</li>
-                <li><strong>Data Science:</strong> Driving data-driven decisions and innovation.</li>
-                <li><strong>Skilling the Future:</strong> Bridging the gap between academic knowledge and market demands.</li>
+                <li><strong>Programming & Software Engineering:</strong> Building the next generation of developers in high-demand stacks.</li>
             </ul>
             <p style="text-align: right; color: #99ccff;">
             — *Powered by the Saudi Federation for Cyber Security and Programming (SAFCSP)*
@@ -175,79 +282,19 @@ st.divider()
 # ---------------------------------------------
 
 
-# --- 3. Main Content / Input Area (Processing Card) ---
-card_col1, card_col2, card_col3 = st.columns([1, 3, 1])
-
+# --- 3. Main Functionality Tabs ---
+card_col1, card_col2, card_col3 = st.columns([1, 4, 1])
 with card_col2:
-    with st.container():
-        st.markdown("## 💾 DATA INGESTION: UPLOAD FILE")
-        
-        uploaded_file = st.file_uploader("PDF Uploader", type=['pdf'], label_visibility="collapsed")
-        
-        st.markdown("## ✍️ WATERMARK TEXT: SET TAG")
-        
-        watermark_text = st.text_input("Watermark Text Input", "CYBER-FLUX ACCESS DENIED", label_visibility="collapsed")
-        
-        if uploaded_file is None:
-            st.info("Upload your document and define the security tag.")
+    tab1, tab2 = st.tabs(["🔒 Protocol 47: Watermark Forge", "🔬 Diagnostic Module: Page Count"])
+
+    with tab1:
+        watermarker_section()
+
+    with tab2:
+        page_counter_section()
 
 
-# --- Watermarking Logic ---
-
-if uploaded_file is not None and watermark_text:
-    st.markdown("---")
-    
-    with st.spinner('INITIATING SECURITY PROTOCOL...'):
-        try:
-            # 1. Create the watermark PDF
-            packet = io.BytesIO()
-            c = canvas.Canvas(packet, pagesize=letter)
-            
-            c.setFont("Helvetica-Bold", 48)
-            wm_color = (1, 1, 1, 0.10) if st.session_state.dark_mode else (0, 0, 0, 0.10)
-            c.setFillColorRGB(*wm_color[:3], alpha=wm_color[3]) 
-            
-            width, height = letter
-            c.translate(width / 2, height / 2)
-            c.rotate(30)
-            c.drawCentredString(0, 0, watermark_text)
-            
-            c.save()
-            packet.seek(0)
-            watermark_reader = PdfReader(packet)
-            watermark_page = watermark_reader.pages[0]
-
-            # 2. Read the input PDF and prepare output
-            input_pdf = PdfReader(uploaded_file)
-            pdf_writer = PdfWriter()
-
-            # 3. Apply watermark to every page
-            for page in input_pdf.pages:
-                page.merge_page(watermark_page)
-                pdf_writer.add_page(page)
-
-            # 4. Save the output PDF to a buffer
-            output_pdf_buffer = io.BytesIO()
-            pdf_writer.write(output_pdf_buffer)
-            output_pdf_buffer.seek(0)
-
-            # --- 4. Output/Download Section ---
-            st.success("PROTOCOL SUCCESSFUL: DOCUMENT SECURED.")
-            
-            d_col1, d_col2, d_col3 = st.columns([1, 1, 1])
-            with d_col2:
-                st.download_button(
-                    label="DOWNLOAD SECURED DATA",
-                    data=output_pdf_buffer,
-                    file_name="SECURED_" + uploaded_file.name,
-                    mime="application/pdf"
-                )
-
-        except Exception as e:
-            st.error(f"PROTOCOL FAILURE: {e}")
-            st.info("Ensure the data file is a valid, unencrypted PDF format.")
-            
-# --- 5. Footer Section ---
+# --- 4. Footer Section ---
 
 st.markdown("---")
 
