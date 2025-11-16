@@ -1,6 +1,4 @@
-# Make sure Streamlit and Pillow are also unpinned/updated
+# Make sure moviepy, streamlit, and Pillow are unpinned or set to modern versions
 streamlit
 Pillow
-
-# Update MoviePy to a version that fixes the ANTIALIAS error
 moviepy>=2.0.0
