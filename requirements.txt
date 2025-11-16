@@ -1,12 +1,3 @@
-# --- Stable Core Dependencies for Streamlit/Video Editing ---
-
-# Unpin Streamlit to get the latest, most compatible version.
 streamlit
-
-# Use MoviePy 2.x or greater. This version is patched to be compatible with 
-# modern Pillow versions (Pillow 10+).
-moviepy>=2.0.0
-
-# Unpin Pillow. The installer will choose the latest version, which is 
-# compatible with Python 3.13 and MoviePy 2.x.
-Pillow
+PyPDF2
+reportlab
