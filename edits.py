@@ -30,6 +30,8 @@ def get_css(is_dark):
         accent_color = "#ff33ff" # Neon Pink
         tagline_color = "#99ccff" # Light blue accent
         shadow_color = "rgba(255, 51, 255, 0.5)" # Pink glow
+        divider_color = "#4c059a" # Divider color
+        
     else:
         # Light Theme Colors
         bg_color = "#f0f2f6"     # Soft light gray
@@ -38,6 +40,7 @@ def get_css(is_dark):
         accent_color = "#00bcd4" # Cyan/Teal
         tagline_color = "#00796b" # Dark teal
         shadow_color = "rgba(0, 188, 212, 0.5)" # Cyan glow
+        divider_color = "#cccccc" # Divider color
         
     return f"""
     <style>
@@ -83,6 +86,11 @@ def get_css(is_dark):
         box-shadow: 0 0 15px {shadow_color};
         margin-top: 40px;
     }}
+    
+    /* Custom divider color */
+    .stApp hr {{
+        border-top: 3px solid {divider_color};
+    }}
 
     /* Accent Button Style */
     .stButton>button {{
@@ -114,7 +122,6 @@ st.markdown(get_css(st.session_state.dark_mode), unsafe_allow_html=True)
 
 
 # --- Mode Toggle and Header ---
-# Add mode toggle in a narrow column to the top right
 t_col1, t_col2 = st.columns([10, 1])
 with t_col2:
     toggle_label = "🌙 Dark Mode" if st.session_state.dark_mode else "☀️ Light Mode"
@@ -123,7 +130,6 @@ with t_col2:
     else:
         st.session_state.dark_mode = False
 
-# Apply CSS changes immediately
 if st.session_state.mode_toggle != st.session_state.dark_mode:
     st.experimental_rerun()
 
@@ -132,15 +138,47 @@ if st.session_state.mode_toggle != st.session_state.dark_mode:
 h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
 with h_col2:
     st.markdown('<div class="hero-font">SECURE.PDF // PROTOCOL 47</div>', unsafe_allow_html=True)
-    st.markdown('<p class="tagline">Data integrity locked down by the Flux Engine.</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tagline">A Data Integrity Module built by Cyber-Flux.</p>', unsafe_allow_html=True)
+
+st.divider()
+
+# --- NEW: Tuwaiq Academy Mission Section ---
+def tuwaiq_mission_section():
+    st.markdown('<h2 style="text-align: center; color: #ff33ff;">// ACADEMY PROTOCOL: TUWAIQ MISSION //</h2>', unsafe_allow_html=True)
+    
+    m_col1, m_col2, m_col3 = st.columns([1, 3, 1])
+    with m_col2:
+        st.markdown(
+            f"""
+            <div style="background-color: {st.get_option('theme.backgroundColor')}; padding: 25px; border-radius: 10px; border: 2px solid {st.get_option('theme.primaryColor')};">
+            <p style="font-size: 18px; color: {st.get_option('theme.textColor')};">
+            This module represents the core mission of **Tuwaiq Academy**: establishing Saudi Arabia as a global hub for advanced technology and digital innovation, aligned with **Vision 2030**.
+            </p>
+            
+            <h3 style="color: {st.get_option('theme.primaryColor')}; margin-top: 20px;">Primary Focus Areas:</h3>
+            <ul>
+                <li><strong>Cyber Security:</strong> Hardening the digital landscape with advanced training and real-world challenges.</li>
+                <li><strong>Programming & Software Engineering:</strong> Building the next generation of developers in high-demand stacks (Python, JavaScript).</li>
+                <li><strong>Data Science:</strong> Driving data-driven decisions and innovation.</li>
+                <li><strong>Skilling the Future:</strong> Bridging the gap between academic knowledge and market demands.</li>
+            </ul>
+            <p style="text-align: right; color: #99ccff;">
+            — *Powered by the Saudi Federation for Cyber Security and Programming (SAFCSP)*
+            </p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+
+tuwaiq_mission_section()
+st.divider()
+# ---------------------------------------------
 
 
-# --- 2. Main Content / Input Area (Wrapped in a Creative Card) ---
-# Use an outer column structure to center the card.
+# --- 3. Main Content / Input Area (Processing Card) ---
 card_col1, card_col2, card_col3 = st.columns([1, 3, 1])
 
 with card_col2:
-    # This st.container gets the styling from the CSS class .stContainer
     with st.container():
         st.markdown("## 💾 DATA INGESTION: UPLOAD FILE")
         
@@ -166,7 +204,6 @@ if uploaded_file is not None and watermark_text:
             c = canvas.Canvas(packet, pagesize=letter)
             
             c.setFont("Helvetica-Bold", 48)
-            # Adjust watermark color based on mode for subtle effect
             wm_color = (1, 1, 1, 0.10) if st.session_state.dark_mode else (0, 0, 0, 0.10)
             c.setFillColorRGB(*wm_color[:3], alpha=wm_color[3]) 
             
@@ -194,7 +231,7 @@ if uploaded_file is not None and watermark_text:
             pdf_writer.write(output_pdf_buffer)
             output_pdf_buffer.seek(0)
 
-            # --- 3. Output/Download Section ---
+            # --- 4. Output/Download Section ---
             st.success("PROTOCOL SUCCESSFUL: DOCUMENT SECURED.")
             
             d_col1, d_col2, d_col3 = st.columns([1, 1, 1])
@@ -210,7 +247,7 @@ if uploaded_file is not None and watermark_text:
             st.error(f"PROTOCOL FAILURE: {e}")
             st.info("Ensure the data file is a valid, unencrypted PDF format.")
             
-# --- 4. Footer Section ---
+# --- 5. Footer Section ---
 
 st.markdown("---")
 
@@ -219,7 +256,7 @@ with f_col2:
     st.markdown(
         """
         <div style="text-align: center; color: #6a5acd; padding: 10px 0;">
-            <p>// STATUS: ONLINE // END OF TRANSMISSION //</p>
+            <p>DESIGNED & DEPLOYED // POWERED BY TUWAIQ ACADEMY MISSION // STATUS: ONLINE //</p>
         </div>
         """, 
         unsafe_allow_html=True
