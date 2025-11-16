@@ -10,7 +10,7 @@ st.title("📝 Simple Streamlit PDF Watermarker")
 
 # --- User Inputs ---
 uploaded_file = st.file_uploader("Upload a PDF file", type=['pdf'])
-watermark_text = st.text_input("Enter Watermark Text:", "CONFIDENTIAL")
+watermark_text = st.text_input("Enter Watermark Text:", "Mustafa Al Ali")
 
 # --- Main Logic ---
 if uploaded_file is not None and watermark_text:
