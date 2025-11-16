@@ -1,4 +1,5 @@
-# Make sure moviepy, streamlit, and Pillow are unpinned or set to modern versions
-streamlit
-Pillow
-moviepy>=2.0.0
+# Use versions known to be stable together and compatible with Python 3.12
+streamlit==1.27.0
+Pillow<10
+moviepy==1.0.3
+# ... ensure any other packages are also pinned if they caused issues
