@@ -1,8 +1,5 @@
-# This must be the absolute latest version to ensure compatibility with Python 3.13
-Pillow>=10.4.0 
-
-# This must be an unpinned or modern version (e.g., >=1.30.0) to support Pillow 10+
-streamlit
-
-# This must be an unpinned or modern version (e.g., >=2.0.0) to fix the ANTIALIAS error
-moviepy>=2.0.0
+# Use known stable versions
+streamlit==1.27.0
+Pillow==9.5.0
+moviepy==1.0.3 
+# Make sure any other dependency causing issues is also pinned
