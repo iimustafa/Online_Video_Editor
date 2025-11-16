@@ -16,7 +16,6 @@ st.set_page_config(
 # Custom CSS for the "Prism Flux" look: 
 # 1. Hide Streamlit menu/footer.
 # 2. Set dark mode background and primary color accent.
-# 3. Apply custom padding and font styling.
 st.markdown(
     """
     <style>
@@ -93,10 +92,12 @@ col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
     st.markdown("### Upload Document")
-    uploaded_file = st.file_uploader("", type=['pdf'], label_visibility="collapsed")
+    # FIX: Add a descriptive label (e.g., "PDF Uploader")
+    uploaded_file = st.file_uploader("PDF Uploader", type=['pdf'], label_visibility="collapsed")
     
     st.markdown("### Watermark Text")
-    watermark_text = st.text_input("", "CONFIDENTIAL", label_visibility="collapsed")
+    # FIX: Add a descriptive label (e.g., "Watermark Text Input")
+    watermark_text = st.text_input("Watermark Text Input", "CONFIDENTIAL", label_visibility="collapsed")
     
     # Simple placeholder to show where processing would occur
     if uploaded_file is None:
