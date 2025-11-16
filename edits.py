@@ -9,12 +9,14 @@ import os
 st.set_page_config(
     page_title="Cyber-Flux Watermarker", 
     layout="wide", 
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded" # Start with sidebar open
 )
 
-# Initialize session state for mode
+# Initialize session state for mode and module selection
 if 'dark_mode' not in st.session_state:
-    st.session_state.dark_mode = True # Default to DARK MODE for the Cyber look
+    st.session_state.dark_mode = True 
+if 'module' not in st.session_state:
+    st.session_state.module = "Watermark Forge" 
 
 # --- CSS Styling Function ---
 
@@ -31,6 +33,7 @@ def get_css(is_dark):
         tagline_color = "#99ccff" # Light blue accent
         shadow_color = "rgba(255, 51, 255, 0.5)" # Pink glow
         divider_color = "#4c059a" # Divider color
+        sidebar_bg = "#100030"  # Slightly darker sidebar
         
     else:
         # Light Theme Colors
@@ -41,6 +44,7 @@ def get_css(is_dark):
         tagline_color = "#00796b" # Dark teal
         shadow_color = "rgba(0, 188, 212, 0.5)" # Cyan glow
         divider_color = "#cccccc" # Divider color
+        sidebar_bg = "#e5e5e5"  # Slightly darker sidebar
         
     return f"""
     <style>
@@ -50,6 +54,11 @@ def get_css(is_dark):
         background-color: {bg_color};
         color: {text_color};
         font-family: 'Space Mono', monospace;
+    }}
+    
+    /* Sidebar Background */
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg};
     }}
 
     /* Streamlit Primary Color Override (for default widgets) */
@@ -78,7 +87,7 @@ def get_css(is_dark):
         font-style: italic;
     }}
     
-    /* Input Card Container (Applied to st.container within tabs) */
+    /* Input Card Container (Main Content Area) */
     .stContainer {{
         background-color: {card_bg};
         padding: 30px;
@@ -109,17 +118,40 @@ def get_css(is_dark):
         background-color: {tagline_color};
         box-shadow: 0 6px 15px {shadow_color};
     }}
-    
-    /* Style for the active tab for better visibility */
-    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {{
-        color: {accent_color};
-        border-bottom-color: {accent_color};
+
+    /* Creative Mode Toggle Buttons (Sidebar) */
+    .mode-toggle-button {{
+        width: 100%;
+        margin: 5px 0;
+        padding: 10px 0;
+        border-radius: 8px;
         font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+    }}
+    
+    /* Active Dark Button */
+    .mode-toggle-button.dark-active {{
+        background-color: #ff33ff; /* Neon Pink */
+        color: #12023d; /* Deep Purple */
+    }}
+    /* Inactive Dark Button */
+    .mode-toggle-button.dark-inactive {{
+        background-color: {sidebar_bg};
+        color: #99ccff;
+        border: 1px solid #99ccff;
     }}
 
-    /* Center input elements */
-    .stFileUploader, .stTextInput {{
-        margin-bottom: 25px;
+    /* Active Light Button */
+    .mode-toggle-button.light-active {{
+        background-color: #00bcd4; /* Cyan */
+        color: #333333;
+    }}
+    /* Inactive Light Button */
+    .mode-toggle-button.light-inactive {{
+        background-color: {sidebar_bg};
+        color: {text_color};
+        border: 1px solid {text_color};
     }}
     
     </style>
@@ -132,15 +164,13 @@ st.markdown(get_css(st.session_state.dark_mode), unsafe_allow_html=True)
 
 def watermarker_section():
     """Implements the PDF Watermarker (Protocol 47)."""
+    st.markdown('<h2 style="color: #ff33ff;">🔒 Protocol 47: Watermark Forge</h2>', unsafe_allow_html=True)
     
-    # Use st.container to get the styled card look
     with st.container():
         st.markdown("## 💾 DATA INGESTION: UPLOAD FILE")
-        
         uploaded_file = st.file_uploader("PDF Uploader (Watermark)", type=['pdf'], label_visibility="collapsed", key="wm_uploader")
         
         st.markdown("## ✍️ WATERMARK TEXT: SET TAG")
-        
         watermark_text = st.text_input("Watermark Text Input", "CYBER-FLUX ACCESS DENIED", label_visibility="collapsed", key="wm_text")
         
         if uploaded_file is None:
@@ -151,7 +181,7 @@ def watermarker_section():
         
         with st.spinner('INITIATING SECURITY PROTOCOL...'):
             try:
-                # 1. Create the watermark PDF
+                # Watermark Logic (unchanged)
                 packet = io.BytesIO()
                 c = canvas.Canvas(packet, pagesize=letter)
                 c.setFont("Helvetica-Bold", 48)
@@ -167,16 +197,13 @@ def watermarker_section():
                 watermark_reader = PdfReader(packet)
                 watermark_page = watermark_reader.pages[0]
 
-                # 2. Process input PDF
                 input_pdf = PdfReader(uploaded_file)
                 pdf_writer = PdfWriter()
 
-                # 3. Apply watermark
                 for page in input_pdf.pages:
                     page.merge_page(watermark_page)
                     pdf_writer.add_page(page)
 
-                # 4. Save output
                 output_pdf_buffer = io.BytesIO()
                 pdf_writer.write(output_pdf_buffer)
                 output_pdf_buffer.seek(0)
@@ -199,7 +226,8 @@ def watermarker_section():
 
 def page_counter_section():
     """Implements the simple PDF Page Counter (Diagnostic Module)."""
-    
+    st.markdown('<h2 style="color: #ff33ff;">🔬 Diagnostic Module: Page Counter</h2>', unsafe_allow_html=True)
+
     with st.container():
         st.markdown("## 📥 FILE ACCESS: UPLOAD PDF")
         
@@ -230,72 +258,83 @@ def page_counter_section():
                 st.info("The file could not be read. Please check the PDF integrity.")
 
 
-# --- Mode Toggle and Header ---
-t_col1, t_col2 = st.columns([10, 1])
-with t_col2:
-    toggle_label = "🌙 Dark Mode" if st.session_state.dark_mode else "☀️ Light Mode"
-    if st.checkbox(toggle_label, value=st.session_state.dark_mode, key='mode_toggle'):
-        st.session_state.dark_mode = True
-    else:
-        st.session_state.dark_mode = False
+# --- Sidebar Setup ---
 
-if st.session_state.mode_toggle != st.session_state.dark_mode:
-    st.experimental_rerun()
+with st.sidebar:
+    st.markdown('<h2 style="color: #ff33ff;">// SYSTEM CONTROL //</h2>', unsafe_allow_html=True)
+    st.divider()
+
+    # --- Mode Toggle (Creative Buttons) ---
+    st.markdown('<h3 style="color: #99ccff;">DISPLAY MODE</h3>', unsafe_allow_html=True)
+    
+    col_d, col_l = st.columns(2)
+    
+    with col_d:
+        dark_class = "dark-active" if st.session_state.dark_mode else "dark-inactive"
+        if st.markdown(f'<div class="mode-toggle-button {dark_class}">🌙 DARK</div>', unsafe_allow_html=True):
+            if not st.session_state.dark_mode:
+                st.session_state.dark_mode = True
+                st.experimental_rerun()
+    
+    with col_l:
+        light_class = "light-active" if not st.session_state.dark_mode else "light-inactive"
+        if st.markdown(f'<div class="mode-toggle-button {light_class}">☀️ LIGHT</div>', unsafe_allow_html=True):
+            if st.session_state.dark_mode:
+                st.session_state.dark_mode = False
+                st.experimental_rerun()
+    
+    st.divider()
+
+    # --- Task Selection ---
+    st.markdown('<h3 style="color: #99ccff;">MODULE SELECTION</h3>', unsafe_allow_html=True)
+    
+    # Use radio buttons for clear task selection
+    selected_module = st.radio(
+        label="Select Task Module",
+        options=["Watermark Forge", "Diagnostic Module"],
+        index=0 if st.session_state.module == "Watermark Forge" else 1,
+        key="module_radio",
+        label_visibility="collapsed"
+    )
+    st.session_state.module = selected_module
+    
+    st.divider()
+
+    # --- Tuwaiq Academy Mission Section (Branding moved to sidebar) ---
+    st.markdown('<h3 style="color: #ff33ff;">// ACADEMY PROTOCOL //</h3>', unsafe_allow_html=True)
+    
+    st.markdown(
+        """
+        <p style="font-size: 14px; color: #99ccff;">
+        This utility is part of the core mission of 
+        <strong style="color: #ff33ff;">Tuwaiq Academy</strong>: developing the next generation of Saudi engineers in Cyber Security and Programming, aligned with Vision 2030.
+        </p>
+        <p style="font-size: 12px; text-align: right; color: #6a5acd;">
+        — *Powered by SAFCSP*
+        </p>
+        """, 
+        unsafe_allow_html=True
+    )
 
 
-# Main title section
+# --- Main Content Area ---
 h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
 with h_col2:
     st.markdown('<div class="hero-font">SECURE.PDF // CYBER-FLUX</div>', unsafe_allow_html=True)
-    st.markdown('<p class="tagline">A Data Integrity Module built by Cyber-Flux.</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tagline">A Data Integrity Console.</p>', unsafe_allow_html=True)
 
 st.divider()
 
-# --- Tuwaiq Academy Mission Section (Branding) ---
-def tuwaiq_mission_section():
-    st.markdown('<h2 style="text-align: center; color: #ff33ff;">// ACADEMY PROTOCOL: TUWAIQ MISSION //</h2>', unsafe_allow_html=True)
-    
-    m_col1, m_col2, m_col3 = st.columns([1, 3, 1])
-    with m_col2:
-        st.markdown(
-            f"""
-            <div style="background-color: {st.get_option('theme.backgroundColor')}; padding: 25px; border-radius: 10px; border: 2px solid {st.get_option('theme.primaryColor')};">
-            <p style="font-size: 18px; color: {st.get_option('theme.textColor')};">
-            This utility is part of the core mission of **Tuwaiq Academy**: establishing Saudi Arabia as a global hub for advanced technology, aligned with **Vision 2030**.
-            </p>
-            
-            <h3 style="color: {st.get_option('theme.primaryColor')}; margin-top: 20px;">Primary Focus Areas:</h3>
-            <ul>
-                <li><strong>Cyber Security:</strong> Hardening the digital landscape with advanced training and real-world challenges.</li>
-                <li><strong>Programming & Software Engineering:</strong> Building the next generation of developers in high-demand stacks.</li>
-            </ul>
-            <p style="text-align: right; color: #99ccff;">
-            — *Powered by the Saudi Federation for Cyber Security and Programming (SAFCSP)*
-            </p>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
-
-tuwaiq_mission_section()
-st.divider()
-# ---------------------------------------------
-
-
-# --- 3. Main Functionality Tabs ---
-card_col1, card_col2, card_col3 = st.columns([1, 4, 1])
-with card_col2:
-    tab1, tab2 = st.tabs(["🔒 Protocol 47: Watermark Forge", "🔬 Diagnostic Module: Page Count"])
-
-    with tab1:
+# --- Display selected module content ---
+col_main = st.columns([0.5, 4, 0.5])
+with col_main[1]:
+    if st.session_state.module == "Watermark Forge":
         watermarker_section()
-
-    with tab2:
+    elif st.session_state.module == "Diagnostic Module":
         page_counter_section()
 
 
-# --- 4. Footer Section ---
-
+# --- Footer Section ---
 st.markdown("---")
 
 f_col1, f_col2, f_col3 = st.columns([1, 2, 1])
@@ -303,7 +342,7 @@ with f_col2:
     st.markdown(
         """
         <div style="text-align: center; color: #6a5acd; padding: 10px 0;">
-            <p>DESIGNED & DEPLOYED // POWERED BY TUWAIQ ACADEMY MISSION // STATUS: ONLINE //</p>
+            <p>DESIGNED & DEPLOYED // STATUS: ONLINE //</p>
         </div>
         """, 
         unsafe_allow_html=True
