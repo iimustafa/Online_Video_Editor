@@ -5,97 +5,127 @@ from reportlab.lib.pagesizes import letter
 import io
 import os
 
-# --- Configuration and Styling ---
-
+# --- Configuration ---
 st.set_page_config(
-    page_title="Chain App Dev Watermarker", 
+    page_title="Tuwaiq Academy", 
     layout="wide", 
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for the "Chain App Dev" look:
-st.markdown(
-    """
-    <style>
-    /* Hide the Streamlit header/footer/menu */
-    #MainMenu, footer {visibility: hidden;}
-    
-    /* Set body and main container background color (light theme) */
-    .stApp {
-        background-color: #f7f7f7;
-        color: #333333;
-        font-family: 'Poppins', sans-serif;
-    }
+# Initialize session state for mode
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = False # Default to light mode
 
-    /* Set Streamlit primary color to the accent orange/coral */
-    :root {
-        --primary-color: #ff6600; 
-    }
+# --- CSS Styling Function ---
+
+def get_css(is_dark):
+    """Generates the appropriate CSS based on the mode."""
+    if is_dark:
+        bg_color = "#1a1a1a"    # Dark background
+        text_color = "#e0e0e0"  # Light text
+        header_color = "#ffffff" # White headers
+        tagline_color = "#aaaaaa" # Lighter gray tagline
+        
+    else: # Light Mode (Chain App Dev style)
+        bg_color = "#f7f7f7"    # Very light gray background
+        text_color = "#333333"  # Dark text
+        header_color = "#333333" # Dark headers
+        tagline_color = "#666666" # Medium gray tagline
+
+    # The accent color (orange/coral) remains constant for both modes
+    accent_color = "#ff6600" 
     
-    /* Style for the main header (large, centered) */
-    .big-font {
+    return f"""
+    <style>
+    /* Global Styles */
+    #MainMenu, footer {{visibility: hidden;}}
+    .stApp {{
+        background-color: {bg_color};
+        color: {text_color};
+        font-family: 'Poppins', sans-serif;
+    }}
+
+    /* Streamlit Primary Color Override (for default widgets) */
+    :root {{
+        --primary-color: {accent_color}; 
+    }}
+    
+    /* Main Header Style */
+    .big-font {{
         font-size: 56px !important;
         font-weight: 700;
-        color: #333333;
+        color: {header_color};
         text-align: center;
         margin-bottom: 5px;
         letter-spacing: 0.5px;
-    }
+    }}
     
-    /* Style for the tagline */
-    .tagline {
+    /* Tagline Style */
+    .tagline {{
         font-size: 20px;
-        color: #666666;
+        color: {tagline_color};
         text-align: center;
         margin-top: 5px;
         margin-bottom: 50px;
-    }
+    }}
     
-    /* Style for the accent button (orange primary color) */
-    .stButton>button {
-        background-color: #ff6600; /* Orange */
+    /* Accent Button Style */
+    .stButton>button {{
+        background-color: {accent_color}; /* Orange */
         color: white;
-        border-radius: 25px; /* Rounded pill shape */
+        border-radius: 25px;
         border: none;
         padding: 12px 30px;
         font-size: 18px;
         font-weight: 600;
         transition: background-color 0.3s;
-    }
-    .stButton>button:hover {
+    }}
+    .stButton>button:hover {{
         background-color: #e65c00; /* Darker orange on hover */
-    }
+    }}
     
     /* Center input containers */
-    .stFileUploader, .stTextInput {
+    .stFileUploader, .stTextInput {{
         margin-bottom: 25px;
-    }
+    }}
     
     </style>
-    """,
-    unsafe_allow_html=True,
-)
+    """
+
+# Apply the dynamic CSS
+st.markdown(get_css(st.session_state.dark_mode), unsafe_allow_html=True)
 
 
 # --- 1. Header Section ---
-# Use columns to ensure content is centered and not full-width
-h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
+# Add mode toggle in a narrow column to the top right
+t_col1, t_col2 = st.columns([10, 1])
+with t_col2:
+    if st.checkbox('🌙 Dark Mode', value=st.session_state.dark_mode, key='mode_toggle'):
+        st.session_state.dark_mode = True
+    else:
+        st.session_state.dark_mode = False
 
+# Re-run the app to apply CSS if the state changed
+if st.session_state.mode_toggle != st.session_state.dark_mode:
+    st.experimental_rerun()
+
+
+# Main title section
+h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
 with h_col2:
     st.markdown('<div class="big-font">ChainApp: PDF Security Tool</div>', unsafe_allow_html=True)
     st.markdown('<p class="tagline">The fastest way to secure your documents with military-grade, non-removable watermarks.</p>', unsafe_allow_html=True)
-    st.markdown("---") # Visual separator
+    st.markdown("---") 
+
 
 # --- 2. Main Content / Input Area ---
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
     st.markdown("## 📥 Upload Your Document")
-    # FIX: Add a descriptive label for accessibility reasons
     uploaded_file = st.file_uploader("PDF Uploader", type=['pdf'], label_visibility="collapsed")
     
     st.markdown("## ✍️ Enter Watermark Text")
-    # FIX: Add a descriptive label for accessibility reasons
     watermark_text = st.text_input("Watermark Text Input", "CHAIN APP DEV CONFIDENTIAL", label_visibility="collapsed")
     
     if uploaded_file is None:
@@ -107,7 +137,6 @@ with col2:
 if uploaded_file is not None and watermark_text:
     st.markdown("---")
     
-    # Progress indicator
     with st.spinner('Processing PDF and applying watermark...'):
         try:
             # 1. Create the watermark PDF
@@ -115,11 +144,13 @@ if uploaded_file is not None and watermark_text:
             c = canvas.Canvas(packet, pagesize=letter)
             
             c.setFont("Helvetica-Bold", 48)
-            c.setFillColorRGB(0, 0, 0, alpha=0.10) # Light gray/black for light theme visibility
+            # Adjust watermark color based on mode for optimal contrast
+            wm_color = (1, 1, 1, 0.10) if st.session_state.dark_mode else (0, 0, 0, 0.10)
+            c.setFillColorRGB(*wm_color[:3], alpha=wm_color[3]) 
             
             width, height = letter
             c.translate(width / 2, height / 2)
-            c.rotate(30) # Slight rotation
+            c.rotate(30)
             c.drawCentredString(0, 0, watermark_text)
             
             c.save()
@@ -144,7 +175,6 @@ if uploaded_file is not None and watermark_text:
             # --- 3. Output/Download Section ---
             st.success("🎉 Success! Your document is now watermarked and ready.")
             
-            # Use columns to center the download button
             d_col1, d_col2, d_col3 = st.columns([1, 1, 1])
             with d_col2:
                 st.download_button(
