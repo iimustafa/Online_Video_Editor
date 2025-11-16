@@ -144,7 +144,7 @@ st.divider()
 
 # --- NEW: Tuwaiq Academy Mission Section ---
 def tuwaiq_mission_section():
-    st.markdown('<h2 style="text-align: center; color: #ff33ff;">// ACADEMY PROTOCOL: TUWAIQ MISSION //</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="text-align: center; color: #ff33ff;">// Tuwaiq Academy //</h2>', unsafe_allow_html=True)
     
     m_col1, m_col2, m_col3 = st.columns([1, 3, 1])
     with m_col2:
