@@ -7,34 +7,38 @@ import os
 
 # --- Configuration ---
 st.set_page_config(
-    page_title="Tuwaiq Academy", 
+    page_title="Cyber-Flux Watermarker", 
     layout="wide", 
     initial_sidebar_state="collapsed"
 )
 
 # Initialize session state for mode
 if 'dark_mode' not in st.session_state:
-    st.session_state.dark_mode = False # Default to light mode
+    st.session_state.dark_mode = True # Default to DARK MODE for the Cyber look
 
 # --- CSS Styling Function ---
 
 def get_css(is_dark):
-    """Generates the appropriate CSS based on the mode."""
-    if is_dark:
-        bg_color = "#1a1a1a"    # Dark background
-        text_color = "#e0e0e0"  # Light text
-        header_color = "#ffffff" # White headers
-        tagline_color = "#aaaaaa" # Lighter gray tagline
-        
-    else: # Light Mode (Chain App Dev style)
-        bg_color = "#f7f7f7"    # Very light gray background
-        text_color = "#333333"  # Dark text
-        header_color = "#333333" # Dark headers
-        tagline_color = "#666666" # Medium gray tagline
-
-    # The accent color (orange/coral) remains constant for both modes
-    accent_color = "#ff6600" 
+    """Generates the Cyber-Vaporwave CSS based on the mode."""
     
+    # --- Theme Colors ---
+    if is_dark:
+        # Dark Theme Colors
+        bg_color = "#12023d"     # Deep Purple/Blue
+        card_bg = "#1f0756"      # Slightly lighter purple for the card
+        text_color = "#f2f2f2"   # Near white
+        accent_color = "#ff33ff" # Neon Pink
+        tagline_color = "#99ccff" # Light blue accent
+        shadow_color = "rgba(255, 51, 255, 0.5)" # Pink glow
+    else:
+        # Light Theme Colors
+        bg_color = "#f0f2f6"     # Soft light gray
+        card_bg = "#ffffff"      # White card
+        text_color = "#333333"   # Dark text
+        accent_color = "#00bcd4" # Cyan/Teal
+        tagline_color = "#00796b" # Dark teal
+        shadow_color = "rgba(0, 188, 212, 0.5)" # Cyan glow
+        
     return f"""
     <style>
     /* Global Styles */
@@ -42,7 +46,7 @@ def get_css(is_dark):
     .stApp {{
         background-color: {bg_color};
         color: {text_color};
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Space Mono', monospace; /* Creative Font */
     }}
 
     /* Streamlit Primary Color Override (for default widgets) */
@@ -50,41 +54,54 @@ def get_css(is_dark):
         --primary-color: {accent_color}; 
     }}
     
-    /* Main Header Style */
-    .big-font {{
-        font-size: 56px !important;
-        font-weight: 700;
-        color: {header_color};
+    /* Main Header Style (Large, Glowing) */
+    .hero-font {{
+        font-size: 60px !important;
+        font-weight: 900;
+        color: {accent_color};
         text-align: center;
         margin-bottom: 5px;
-        letter-spacing: 0.5px;
+        text-shadow: 0 0 10px {shadow_color}, 0 0 20px {shadow_color};
+        letter-spacing: 2px;
     }}
     
     /* Tagline Style */
     .tagline {{
-        font-size: 20px;
+        font-size: 24px;
         color: {tagline_color};
         text-align: center;
         margin-top: 5px;
         margin-bottom: 50px;
+        font-style: italic;
     }}
     
+    /* Input Card Container (Creative Feature) */
+    .stContainer {{
+        background-color: {card_bg};
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 0 15px {shadow_color};
+        margin-top: 40px;
+    }}
+
     /* Accent Button Style */
     .stButton>button {{
-        background-color: {accent_color}; /* Orange */
-        color: white;
-        border-radius: 25px;
+        background-color: {accent_color};
+        color: {bg_color}; /* Use contrasting background color for text */
+        border-radius: 12px;
         border: none;
-        padding: 12px 30px;
+        padding: 12px 35px;
         font-size: 18px;
-        font-weight: 600;
-        transition: background-color 0.3s;
+        font-weight: bold;
+        transition: all 0.3s;
+        box-shadow: 0 4px 10px {shadow_color};
     }}
     .stButton>button:hover {{
-        background-color: #e65c00; /* Darker orange on hover */
+        background-color: {tagline_color};
+        box-shadow: 0 6px 15px {shadow_color};
     }}
     
-    /* Center input containers */
+    /* Center input elements */
     .stFileUploader, .stTextInput {{
         margin-bottom: 25px;
     }}
@@ -96,16 +113,17 @@ def get_css(is_dark):
 st.markdown(get_css(st.session_state.dark_mode), unsafe_allow_html=True)
 
 
-# --- 1. Header Section ---
+# --- Mode Toggle and Header ---
 # Add mode toggle in a narrow column to the top right
 t_col1, t_col2 = st.columns([10, 1])
 with t_col2:
-    if st.checkbox('🌙 Dark Mode', value=st.session_state.dark_mode, key='mode_toggle'):
+    toggle_label = "🌙 Dark Mode" if st.session_state.dark_mode else "☀️ Light Mode"
+    if st.checkbox(toggle_label, value=st.session_state.dark_mode, key='mode_toggle'):
         st.session_state.dark_mode = True
     else:
         st.session_state.dark_mode = False
 
-# Re-run the app to apply CSS if the state changed
+# Apply CSS changes immediately
 if st.session_state.mode_toggle != st.session_state.dark_mode:
     st.experimental_rerun()
 
@@ -113,23 +131,27 @@ if st.session_state.mode_toggle != st.session_state.dark_mode:
 # Main title section
 h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
 with h_col2:
-    st.markdown('<div class="big-font">ChainApp: PDF Security Tool</div>', unsafe_allow_html=True)
-    st.markdown('<p class="tagline">The fastest way to secure your documents with military-grade, non-removable watermarks.</p>', unsafe_allow_html=True)
-    st.markdown("---") 
+    st.markdown('<div class="hero-font">SECURE.PDF // PROTOCOL 47</div>', unsafe_allow_html=True)
+    st.markdown('<p class="tagline">Data integrity locked down by the Flux Engine.</p>', unsafe_allow_html=True)
 
 
-# --- 2. Main Content / Input Area ---
-col1, col2, col3 = st.columns([1, 2, 1])
+# --- 2. Main Content / Input Area (Wrapped in a Creative Card) ---
+# Use an outer column structure to center the card.
+card_col1, card_col2, card_col3 = st.columns([1, 3, 1])
 
-with col2:
-    st.markdown("## 📥 Upload Your Document")
-    uploaded_file = st.file_uploader("PDF Uploader", type=['pdf'], label_visibility="collapsed")
-    
-    st.markdown("## ✍️ Enter Watermark Text")
-    watermark_text = st.text_input("Watermark Text Input", "CHAIN APP DEV CONFIDENTIAL", label_visibility="collapsed")
-    
-    if uploaded_file is None:
-        st.info("Upload a PDF and customize your watermark text above.")
+with card_col2:
+    # This st.container gets the styling from the CSS class .stContainer
+    with st.container():
+        st.markdown("## 💾 DATA INGESTION: UPLOAD FILE")
+        
+        uploaded_file = st.file_uploader("PDF Uploader", type=['pdf'], label_visibility="collapsed")
+        
+        st.markdown("## ✍️ WATERMARK TEXT: SET TAG")
+        
+        watermark_text = st.text_input("Watermark Text Input", "CYBER-FLUX ACCESS DENIED", label_visibility="collapsed")
+        
+        if uploaded_file is None:
+            st.info("Upload your document and define the security tag.")
 
 
 # --- Watermarking Logic ---
@@ -137,14 +159,14 @@ with col2:
 if uploaded_file is not None and watermark_text:
     st.markdown("---")
     
-    with st.spinner('Processing PDF and applying watermark...'):
+    with st.spinner('INITIATING SECURITY PROTOCOL...'):
         try:
             # 1. Create the watermark PDF
             packet = io.BytesIO()
             c = canvas.Canvas(packet, pagesize=letter)
             
             c.setFont("Helvetica-Bold", 48)
-            # Adjust watermark color based on mode for optimal contrast
+            # Adjust watermark color based on mode for subtle effect
             wm_color = (1, 1, 1, 0.10) if st.session_state.dark_mode else (0, 0, 0, 0.10)
             c.setFillColorRGB(*wm_color[:3], alpha=wm_color[3]) 
             
@@ -173,20 +195,20 @@ if uploaded_file is not None and watermark_text:
             output_pdf_buffer.seek(0)
 
             # --- 3. Output/Download Section ---
-            st.success("🎉 Success! Your document is now watermarked and ready.")
+            st.success("PROTOCOL SUCCESSFUL: DOCUMENT SECURED.")
             
             d_col1, d_col2, d_col3 = st.columns([1, 1, 1])
             with d_col2:
                 st.download_button(
-                    label="Download Secured PDF",
+                    label="DOWNLOAD SECURED DATA",
                     data=output_pdf_buffer,
-                    file_name="secured_" + uploaded_file.name,
+                    file_name="SECURED_" + uploaded_file.name,
                     mime="application/pdf"
                 )
 
         except Exception as e:
-            st.error(f"An error occurred: {e}")
-            st.info("Please verify the file is a standard, unencrypted PDF document.")
+            st.error(f"PROTOCOL FAILURE: {e}")
+            st.info("Ensure the data file is a valid, unencrypted PDF format.")
             
 # --- 4. Footer Section ---
 
@@ -196,8 +218,8 @@ f_col1, f_col2, f_col3 = st.columns([1, 2, 1])
 with f_col2:
     st.markdown(
         """
-        <div style="text-align: center; color: #999999; padding: 10px 0;">
-            <p>Made with Streamlit. | Design inspired by TemplateMo Chain App Dev.</p>
+        <div style="text-align: center; color: #6a5acd; padding: 10px 0;">
+            <p>// STATUS: ONLINE // END OF TRANSMISSION //</p>
         </div>
         """, 
         unsafe_allow_html=True
