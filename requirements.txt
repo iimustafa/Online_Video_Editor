@@ -1,3 +1,4 @@
 streamlit
 Pillow
 scikit-learn  # For k-means clustering to extract dominant colors from images
+requests
