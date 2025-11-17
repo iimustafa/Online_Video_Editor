@@ -2,7 +2,11 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 from sklearn.cluster import KMeans
-import io
+import warnings
+
+# Suppress K-Means initialization warning
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # --- FUNCTION 1: DYNAMIC COLOR EXTRACTION LOGIC ---
 def get_dominant_colors(uploaded_file, n_colors=5):
@@ -10,23 +14,17 @@ def get_dominant_colors(uploaded_file, n_colors=5):
     Analyzes an image and returns the Hex codes of the N most dominant colors 
     using K-Means Clustering.
     """
-    # Read the file from the Streamlit UploadedFile object
-    img = Image.open(uploaded_file)
-    
-    # Resize and convert to RGB for consistency and faster processing
-    img = img.convert("RGB")
-    # Resize to a smaller image (e.g., 150x150) to speed up clustering
+    img = Image.open(uploaded_file).convert("RGB")
+    # Resize for faster processing
     img = img.resize((150, 150))
     
-    # Convert image data to a numpy array of pixels: (width * height, 3)
     img_array = np.array(img)
     pixels = img_array.reshape(-1, 3)
     
-    # Use K-Means Clustering to find N dominant colors
+    # K-Means Clustering
     kmeans = KMeans(n_clusters=n_colors, n_init=10, random_state=42)
     kmeans.fit(pixels)
     
-    # The cluster centers are the dominant colors in RGB format
     dominant_rgb = kmeans.cluster_centers_.astype(int)
     
     # Convert RGB to Hex codes
@@ -38,69 +36,57 @@ def get_dominant_colors(uploaded_file, n_colors=5):
     return hex_colors
 
 
-# --- FUNCTION 2: MAIN APP LOGIC ---
+# --- FUNCTION 2: RENDER COLOR BOX (The UI Fix) ---
+def render_color_box(color_hex):
+    """
+    Renders the color box and the copyable Hex code using Streamlit's native features.
+    """
+    # 1. Display the color box (using HTML/CSS for visual appeal)
+    st.markdown(
+        f"""
+        <div style="background-color: {color_hex}; 
+                    height: 150px; 
+                    border-radius: 12px; 
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # 2. Display the Hex code using st.code, which has built-in copy functionality
+    st.code(color_hex, language='text', line_numbers=False)
+
+
+# --- MAIN APP LOGIC ---
 
 # 1. Set Custom Page Configuration
 st.set_page_config(
     page_title="Palette Genius",
-    layout="wide", # Use wide for more space for the palette
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# 2. Custom CSS for Creative UI
-# Injects CSS to style the color boxes and add the click-to-copy JavaScript
+# 2. Custom CSS for base styles
 st.markdown("""
 <style>
     /* Custom Streamlit layout adjustments */
     .block-container {
         padding-top: 2rem;
     }
-    
-    /* Style for the individual color box container */
-    .color-box {
-        height: 150px;
-        border-radius: 12px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding-bottom: 10px;
-        font-weight: bold;
-        color: #fff; 
-        font-family: monospace;
-        transition: transform 0.2s;
+    /* Hide the code block header and border for a cleaner look */
+    div[data-testid="stCodeBlock"] {
+        border: none;
+        padding: 0 !important;
+        margin-top: -10px; /* Adjust spacing between box and code */
     }
-    
-    /* Add a hover effect */
-    .color-box:hover {
-        transform: scale(1.03);
+    div[data-testid="stCodeBlock"] pre {
+        background-color: transparent !important;
+        color: var(--text-color) !important;
+        font-weight: bold;
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
-
-
-# --- JAVASCRIPT FOR CLICK-TO-COPY (Streamlit friendly) ---
-# A helper function to add a copy button that runs JavaScript
-def copy_to_clipboard_js(color_hex):
-    """Generates the HTML/JS for a click-to-copy action."""
-    return f"""
-    <script>
-        function copyText(hex) {{
-            navigator.clipboard.writeText(hex)
-                .then(() => {{
-                    // Simple visual feedback could be implemented here if a custom component was used
-                }})
-                .catch(err => {{
-                    console.error('Could not copy text: ', err);
-                }});
-        }}
-    </script>
-    <div class='color-box' 
-         style='background-color: {color_hex};' 
-         onclick="copyText('{color_hex}')">
-         <span style="color: #000; background: rgba(255, 255, 255, 0.7); padding: 2px 6px; border-radius: 4px; user-select: none; cursor: pointer;" title="Click to Copy">{color_hex}</span>
-    </div>
-    """
 
 
 st.title("🎨 Palette Genius: Your Mood, Your Colors")
@@ -108,7 +94,7 @@ st.caption("Generate harmonious 5-color palettes from an image or a creative pro
 
 st.divider()
 
-# 3. Input Tabs (Organization)
+# 3. Input Tabs
 tab1, tab2 = st.tabs(["🖼️ Image Uploader", "✍️ Text Prompt"])
 
 # --- TAB 1: IMAGE UPLOADER ---
@@ -118,39 +104,31 @@ with tab1:
     
     if uploaded_file is not None:
         
-        # Display the uploaded image
         st.image(uploaded_file, caption="Source Image", use_column_width=True)
-        
         st.subheader("Generated Palette")
+        
         try:
-            # Call the dynamic function
             hex_colors = get_dominant_colors(uploaded_file, n_colors=5)
-            
-            cols = st.columns(5) # Create 5 equal columns for the palette
+            cols = st.columns(5)
             
             for i, color in enumerate(hex_colors):
                 with cols[i]:
-                    # Display the color box with click-to-copy functionality
-                    st.markdown(
-                        copy_to_clipboard_js(color), 
-                        unsafe_allow_html=True
-                    )
-            st.success("Palette generated! Click any Hex code to copy it.")
+                    # Call the fixed render function
+                    render_color_box(color)
             
         except Exception as e:
             st.error(f"An error occurred during color extraction. Please try a different image. Details: {e}")
 
-# --- TAB 2: TEXT PROMPT (Placeholder for Future Expansion) ---
+# --- TAB 2: TEXT PROMPT ---
 with tab2:
     st.markdown("Describe a mood or a scene and generate a corresponding color palette.")
     text_prompt = st.text_input("Describe the mood or scene:", "Cozy Autumn Evening")
     
     if st.button("Generate Palette from Prompt"):
         
-        # Placeholder Logic: In a real app, this would use an API or a pre-defined mapping.
         st.info(f"Using a placeholder palette for the prompt: **{text_prompt}**")
         
-        # A static palette matching the "Cozy Autumn Evening" vibe
+        # Static palette matching the "Cozy Autumn Evening" vibe
         prompt_colors = ["#A1887F", "#4E342E", "#D7CCC8", "#8D6E63", "#FFCC80"]
         
         st.subheader("Generated Palette")
@@ -158,8 +136,5 @@ with tab2:
         
         for i, color in enumerate(prompt_colors):
             with prompt_cols[i]:
-                st.markdown(
-                    copy_to_clipboard_js(color), 
-                    unsafe_allow_html=True
-                )
-        st.success("Palette generated! Click any Hex code to copy it.")
+                # Call the fixed render function
+                render_color_box(color)
