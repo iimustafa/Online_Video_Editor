@@ -281,7 +281,7 @@ with st.sidebar:
         if st.markdown(f'<div class="mode-toggle-button {light_class}">☀️ LIGHT</div>', unsafe_allow_html=True):
             if st.session_state.dark_mode:
                 st.session_state.dark_mode = False
-                st.experimental_rerun()
+                st.rerun()
     
     st.divider()
 
