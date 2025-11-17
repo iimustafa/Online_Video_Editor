@@ -3,18 +3,21 @@ import numpy as np
 from PIL import Image
 from sklearn.cluster import KMeans
 import warnings
+import requests
+from io import BytesIO
 
-# Suppress K-Means initialization warning
+# Suppress K-Means initialization warnings for cleaner output
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# --- FUNCTION 1: DYNAMIC COLOR EXTRACTION LOGIC ---
-def get_dominant_colors(uploaded_file, n_colors=5):
+# --- HELPER FUNCTIONS ---
+
+def get_dominant_colors(image_file, n_colors=5):
     """
-    Analyzes an image and returns the Hex codes of the N most dominant colors 
-    using K-Means Clustering.
+    Analyzes an image file (BytesIO or UploadedFile) and returns the Hex codes 
+    of the N most dominant colors using K-Means Clustering.
     """
-    img = Image.open(uploaded_file).convert("RGB")
+    img = Image.open(image_file).convert("RGB")
     # Resize for faster processing
     img = img.resize((150, 150))
     
@@ -35,8 +38,16 @@ def get_dominant_colors(uploaded_file, n_colors=5):
         
     return hex_colors
 
+def fetch_image_from_url(url):
+    """Fetches image content from a URL."""
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        return BytesIO(response.content)
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching image from URL: {e}")
+        return None
 
-# --- FUNCTION 2: RENDER COLOR BOX (The UI Fix) ---
 def render_color_box(color_hex):
     """
     Renders the color box and the copyable Hex code using Streamlit's native features.
@@ -54,87 +65,138 @@ def render_color_box(color_hex):
     )
     
     # 2. Display the Hex code using st.code, which has built-in copy functionality
+    # The language='text' ensures a clean, monospaced look
     st.code(color_hex, language='text', line_numbers=False)
 
 
-# --- MAIN APP LOGIC ---
+# --- UI SETUP: DARK/LIGHT MODE TOGGLE ---
 
-# 1. Set Custom Page Configuration
+# Initialize session state for the theme
+if 'dark_mode' not in st.session_state:
+    # Set default based on Streamlit's default theme (assuming default is light)
+    st.session_state.dark_mode = True # Start with dark mode for high contrast
+
+def toggle_theme():
+    """Toggles the dark_mode state and reruns the app to apply CSS."""
+    st.session_state.dark_mode = not st.session_state.dark_mode
+    # Use st.rerun() to force the script to restart and apply the new CSS class
+    st.rerun()
+
+# --- STREAMLIT PAGE CONFIG AND CUSTOM CSS ---
+
 st.set_page_config(
     page_title="Palette Genius",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded" # Set sidebar to expanded
 )
 
-# 2. Custom CSS for base styles
-st.markdown("""
+# Apply the appropriate CSS class to the main container
+theme_class = "dark-mode-container" if st.session_state.dark_mode else "light-mode-container"
+
+st.markdown(f'<div class="{theme_class}">', unsafe_allow_html=True) # Open main container div
+
+# 2. Custom CSS for Dark/Light Mode and Widget Styling
+st.markdown(f"""
 <style>
-    /* Custom Streamlit layout adjustments */
-    .block-container {
-        padding-top: 2rem;
-    }
-    /* Hide the code block header and border for a cleaner look */
-    div[data-testid="stCodeBlock"] {
+    /* Base Streamlit overrides */
+    .stApp {{
+        background-color: {'#1c1f24' if st.session_state.dark_mode else '#f0f2f6'};
+        color: {'#e0e0e0' if st.session_state.dark_mode else '#111111'};
+    }}
+    .st-emotion-cache-1kyxreqf {{ /* Sidebar background */
+        background-color: {'#2c3038' if st.session_state.dark_mode else '#ffffff'};
+    }}
+    h1, h2, h3, .stMarkdown p, .st-emotion-cache-qbevgv {{
+        color: {'#e0e0e0' if st.session_state.dark_mode else '#111111'} !important;
+    }}
+
+    /* Code Block Styling (for Hex codes) */
+    div[data-testid="stCodeBlock"] {{
         border: none;
         padding: 0 !important;
-        margin-top: -10px; /* Adjust spacing between box and code */
-    }
-    div[data-testid="stCodeBlock"] pre {
+        margin-top: -10px;
+    }}
+    div[data-testid="stCodeBlock"] pre {{
         background-color: transparent !important;
-        color: var(--text-color) !important;
+        color: {'#e0e0e0' if st.session_state.dark_mode else '#111111'} !important;
         font-weight: bold;
         text-align: center;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
+# --- SIDEBAR (THEME TOGGLE) ---
 
-st.title("🎨 Palette Genius: Your Mood, Your Colors")
-st.caption("Generate harmonious 5-color palettes from an image or a creative prompt.")
+with st.sidebar:
+    st.title("Settings")
+    
+    mode_text = "🌙 Dark Mode" if st.session_state.dark_mode else "☀️ Light Mode"
+    
+    st.button(
+        f"Toggle to {mode_text}", 
+        on_click=toggle_theme, 
+        use_container_width=True
+    )
+    st.markdown("---")
+    st.info("Palette Genius finds the most dominant colors in any image you provide.")
+
+# --- MAIN APP CONTENT ---
+
+st.title("🎨 Palette Genius")
+st.caption("Extract harmonious 5-color palettes from uploaded images or web URLs.")
 
 st.divider()
 
-# 3. Input Tabs
-tab1, tab2 = st.tabs(["🖼️ Image Uploader", "✍️ Text Prompt"])
+# 4. Split Features into 2 Boxes (Columns)
+col1, col2 = st.columns(2)
 
-# --- TAB 1: IMAGE UPLOADER ---
-with tab1:
-    st.markdown("Upload a photo and we'll extract the 5 most dominant colors.")
-    uploaded_file = st.file_uploader("Choose an image (PNG, JPG)", type=["png", "jpg", "jpeg"])
-    
-    if uploaded_file is not None:
+# --- BOX 1: IMAGE UPLOADER ---
+with col1:
+    with st.container(border=True): # Use a container with a border for the "box" effect
+        st.header("🖼️ From Your Device")
+        st.markdown("Upload a photo and analyze its core color scheme.")
+        uploaded_file = st.file_uploader("Choose an image (PNG, JPG)", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
         
-        st.image(uploaded_file, caption="Source Image", use_column_width=True)
-        st.subheader("Generated Palette")
-        
-        try:
-            hex_colors = get_dominant_colors(uploaded_file, n_colors=5)
-            cols = st.columns(5)
+        if uploaded_file is not None:
+            st.image(uploaded_file, caption="Source Image", use_column_width=True)
+            st.subheader("Generated Palette")
             
-            for i, color in enumerate(hex_colors):
-                with cols[i]:
-                    # Call the fixed render function
-                    render_color_box(color)
-            
-        except Exception as e:
-            st.error(f"An error occurred during color extraction. Please try a different image. Details: {e}")
+            try:
+                hex_colors = get_dominant_colors(uploaded_file, n_colors=5)
+                palette_cols = st.columns(5)
+                
+                for i, color in enumerate(hex_colors):
+                    with palette_cols[i]:
+                        render_color_box(color)
+                
+            except Exception:
+                st.error("Error processing image file. Please check the file format.")
 
-# --- TAB 2: TEXT PROMPT ---
-with tab2:
-    st.markdown("Describe a mood or a scene and generate a corresponding color palette.")
-    text_prompt = st.text_input("Describe the mood or scene:", "Cozy Autumn Evening")
-    
-    if st.button("Generate Palette from Prompt"):
+# --- BOX 2: IMAGE URL (Creative Alternative) ---
+with col2:
+    with st.container(border=True): # Use a container with a border for the "box" effect
+        st.header("🌐 From the Web")
+        st.markdown("Paste an image URL to extract its color palette instantly.")
+        image_url = st.text_input("Image URL:", placeholder="e.g., https://unsplash.com/photos/...")
         
-        st.info(f"Using a placeholder palette for the prompt: **{text_prompt}**")
-        
-        # Static palette matching the "Cozy Autumn Evening" vibe
-        prompt_colors = ["#A1887F", "#4E342E", "#D7CCC8", "#8D6E63", "#FFCC80"]
-        
-        st.subheader("Generated Palette")
-        prompt_cols = st.columns(5)
-        
-        for i, color in enumerate(prompt_colors):
-            with prompt_cols[i]:
-                # Call the fixed render function
-                render_color_box(color)
+        if image_url:
+            with st.spinner("Fetching and analyzing image..."):
+                image_bytes = fetch_image_from_url(image_url)
+                
+            if image_bytes:
+                st.image(image_bytes, caption="Image from URL", use_column_width=True)
+                st.subheader("Generated Palette")
+                
+                try:
+                    hex_colors = get_dominant_colors(image_bytes, n_colors=5)
+                    palette_cols = st.columns(5)
+                    
+                    for i, color in enumerate(hex_colors):
+                        with palette_cols[i]:
+                            render_color_box(color)
+                            
+                except Exception:
+                    st.error("Error processing image data from URL.")
+            
+# Close the main container div applied at the beginning
+st.markdown('</div>', unsafe_allow_html=True)
